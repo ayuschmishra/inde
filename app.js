@@ -3,7 +3,7 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getStorage, ref, uploadBytes,
+  getStorage, ref, uploadBytesResumable,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 import { firebaseConfig, PHOTO_FOLDER } from "./firebase-config.js";
 
@@ -66,7 +66,7 @@ function capture() {
   const vw = video.videoWidth, vh = video.videoHeight;
   if (!vw || !vh) { setStatus("Camera still starting, hold on…", true); return; }
   // Downscale so the upload is small and fast: longest side capped at 800px.
-  const scale = Math.min(1, 800 / Math.max(vw, vh));
+  const scale = Math.min(1, 480 / Math.max(vw, vh));
   const w = Math.round(vw * scale), h = Math.round(vh * scale);
   canvas.width = w;
   canvas.height = h;
@@ -79,7 +79,7 @@ function capture() {
     preview.src = URL.createObjectURL(blob);
     stopCamera();
     show("step-review");
-  }, "image/jpeg", 0.7);
+  }, "image/jpeg", 0.6);
 }
 
 async function send() {
@@ -87,20 +87,18 @@ async function send() {
   const btn = $("btn-send");
   btn.disabled = true;
   setStatus("Sending…");
-  try {
-    const id = `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
-    const fileRef = ref(storage, `${PHOTO_FOLDER}/${id}.jpg`);
-    await uploadBytes(fileRef, photoBlob, {
-      contentType: "image/jpeg",
-      customMetadata: { sentAt: new Date().toISOString() },
-    });
-    photoBlob = null;
-    setStatus("");
-    show("step-done");
-  } catch (err) {
-    setStatus(`Upload failed: ${err.code || err.message}`, true);
-    btn.disabled = false;
-  }
+  const id = `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+  const fileRef = ref(storage, `${PHOTO_FOLDER}/${id}.jpg`);
+  const task = uploadBytesResumable(fileRef, photoBlob, {
+    contentType: "image/jpeg",
+    customMetadata: { sentAt: new Date().toISOString() },
+  });
+  task.on(
+    "state_changed",
+    (snap) => setStatus(`Sending… ${Math.round((snap.bytesTransferred / snap.totalBytes) * 100)}%`),
+    (err) => { setStatus(`Upload failed: ${err.code || err.message}`, true); btn.disabled = false; },
+    () => { photoBlob = null; setStatus(""); show("step-done"); }
+  );
 }
 
 $("consent").addEventListener("change", (e) => ($("btn-start").disabled = !e.target.checked));
