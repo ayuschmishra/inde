@@ -63,8 +63,11 @@ async function startCamera() {
 }
 
 function capture() {
-  const w = video.videoWidth, h = video.videoHeight;
-  if (!w || !h) { setStatus("Camera still starting, hold on…", true); return; }
+  const vw = video.videoWidth, vh = video.videoHeight;
+  if (!vw || !vh) { setStatus("Camera still starting, hold on…", true); return; }
+  // Downscale so the upload is small and fast: longest side capped at 800px.
+  const scale = Math.min(1, 800 / Math.max(vw, vh));
+  const w = Math.round(vw * scale), h = Math.round(vh * scale);
   canvas.width = w;
   canvas.height = h;
   const ctx = canvas.getContext("2d");
@@ -76,7 +79,7 @@ function capture() {
     preview.src = URL.createObjectURL(blob);
     stopCamera();
     show("step-review");
-  }, "image/jpeg", 0.85);
+  }, "image/jpeg", 0.7);
 }
 
 async function send() {
@@ -85,12 +88,11 @@ async function send() {
   btn.disabled = true;
   setStatus("Sending…");
   try {
-    const name = ($("name").value || "anonymous").trim().replace(/[^\w -]/g, "").slice(0, 60) || "anonymous";
     const id = `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
     const fileRef = ref(storage, `${PHOTO_FOLDER}/${id}.jpg`);
     await uploadBytes(fileRef, photoBlob, {
       contentType: "image/jpeg",
-      customMetadata: { name, sentAt: new Date().toISOString() },
+      customMetadata: { sentAt: new Date().toISOString() },
     });
     photoBlob = null;
     setStatus("");
@@ -103,7 +105,6 @@ async function send() {
 
 $("consent").addEventListener("change", (e) => ($("btn-start").disabled = !e.target.checked));
 $("btn-start").addEventListener("click", startCamera);
-$("btn-retake").addEventListener("click", startCamera);
 $("btn-send").addEventListener("click", send);
 $("btn-again").addEventListener("click", () => { $("btn-send").disabled = false; startCamera(); });
 window.addEventListener("pagehide", stopCamera);
