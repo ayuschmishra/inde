@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Take a photo</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="card">
+    <h1>Take a photo</h1>
+
+    <!-- Step 1: consent -->
+    <section id="step-consent">
+      <p class="lead">
+        This page will ask to use your camera and take one photo.
+        Nothing is sent until you review it and press <strong>Send</strong>.
+      </p>
+      <label class="field">
+        Your name <span class="muted">(optional)</span>
+        <input id="name" type="text" maxlength="80" placeholder="e.g. Ayush" />
+      </label>
+      <label class="check">
+        <input id="consent" type="checkbox" />
+        I agree to share the photo I take with the site owner.
+      </label>
+      <button id="btn-start" class="primary" disabled>Allow camera</button>
+    </section>
+
+    <!-- Step 2: live preview (photo auto-taken once camera is ready) -->
+    <section id="step-camera" hidden>
+      <div class="frame">
+        <video id="video" autoplay playsinline muted></video>
+      </div>
+      <p class="lead" style="text-align:center">Hold still — taking your photo…</p>
+    </section>
+
+    <!-- Step 3: review -->
+    <section id="step-review" hidden>
+      <div class="frame">
+        <img id="preview" alt="Your photo" />
+      </div>
+      <div class="row">
+        <button id="btn-retake" class="ghost">Retake</button>
+        <button id="btn-send" class="primary">Send</button>
+      </div>
+    </section>
+
+    <!-- Step 4: done -->
+    <section id="step-done" hidden>
+      <p class="lead">✅ Photo sent. Thank you!</p>
+      <button id="btn-again" class="ghost">Take another</button>
+    </section>
+
+    <p id="status" class="status" role="status"></p>
+    <canvas id="canvas" hidden></canvas>
+  </main>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
